@@ -1,9 +1,9 @@
-import { createClient } from "@/lib/supabase/server"
+import { createAdminClient } from "@/lib/supabase/admin"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { CustomersTable } from "@/components/admin/customers-table"
 
 export default async function CustomersPage() {
-  const supabase = await createClient()
+  const supabase = createAdminClient()
 
   const { data: customers } = await supabase.from("customers").select("*").order("created_at", { ascending: false })
 

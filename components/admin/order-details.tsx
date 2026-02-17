@@ -2,7 +2,7 @@
 
 import { useState } from "react"
 import { useRouter } from "next/navigation"
-import { createClient } from "@/lib/supabase/client"
+import { updateOrder, updateOrderStatus, deleteOrder } from "@/app/admin/actions"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Label } from "@/components/ui/label"
@@ -52,14 +52,8 @@ export function OrderDetails({ order }: OrderDetailsProps) {
 
   const handleDelete = async () => {
     setIsLoading(true)
-    const supabase = createClient()
-
     try {
-      const { error } = await supabase.from("repair_orders").delete().eq("id", order.id)
-
-      if (error) throw error
-
-      alert("Ordem excluída com sucesso!")
+      await deleteOrder(order.id)
       router.push("/admin/orders")
       router.refresh()
     } catch (err) {
@@ -70,21 +64,12 @@ export function OrderDetails({ order }: OrderDetailsProps) {
 
   const handleUpdate = async () => {
     setIsLoading(true)
-    const supabase = createClient()
-
     try {
-      const { error } = await supabase
-        .from("repair_orders")
-        .update({
-          status,
-          final_cost: finalCost ? Number.parseFloat(finalCost) : null,
-          notes,
-          updated_at: new Date().toISOString(),
-        })
-        .eq("id", order.id)
-
-      if (error) throw error
-
+      await updateOrder(order.id, {
+        status,
+        final_cost: finalCost ? Number.parseFloat(finalCost) : null,
+        notes: notes || null,
+      })
       router.refresh()
       alert("Ordem atualizada com sucesso!")
     } catch (err) {
@@ -97,19 +82,8 @@ export function OrderDetails({ order }: OrderDetailsProps) {
   const handleQuickStatusChange = async (newStatus: string) => {
     setIsLoading(true)
     setStatus(newStatus)
-    const supabase = createClient()
-
     try {
-      const { error } = await supabase
-        .from("repair_orders")
-        .update({
-          status: newStatus,
-          updated_at: new Date().toISOString(),
-        })
-        .eq("id", order.id)
-
-      if (error) throw error
-
+      await updateOrderStatus(order.id, newStatus)
       router.refresh()
     } catch (err) {
       alert(err instanceof Error ? err.message : "Erro ao atualizar status")

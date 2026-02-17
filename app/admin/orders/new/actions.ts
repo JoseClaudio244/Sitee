@@ -2,10 +2,10 @@
 
 import { revalidatePath } from "next/cache"
 import { redirect } from "next/navigation"
-import { createClient } from "@/lib/supabase/server"
+import { createAdminClient } from "@/lib/supabase/admin"
 
 export async function getServices() {
-  const supabase = await createClient()
+  const supabase = createAdminClient()
   const { data, error } = await supabase.from("services").select("*").order("name")
 
   if (error) {
@@ -17,89 +17,83 @@ export async function getServices() {
 }
 
 export async function createOrder(formData: FormData) {
-  const supabase = await createClient()
+  const supabase = createAdminClient()
 
-  try {
-    // Extract form data
-    const customerName = formData.get("customerName") as string
-    const customerPhone = formData.get("customerPhone") as string
-    const customerEmail = formData.get("customerEmail") as string
-    const deviceType = formData.get("deviceType") as string
-    const deviceBrand = formData.get("deviceBrand") as string
-    const deviceModel = formData.get("deviceModel") as string
-    const problemDescription = formData.get("problemDescription") as string
-    const estimatedCost = formData.get("estimatedCost") as string
+  const customerName = formData.get("customerName") as string
+  const customerPhone = formData.get("customerPhone") as string
+  const customerEmail = formData.get("customerEmail") as string
+  const deviceType = formData.get("deviceType") as string
+  const deviceBrand = formData.get("deviceBrand") as string
+  const deviceModel = formData.get("deviceModel") as string
+  const deviceColor = formData.get("deviceColor") as string
+  const deviceImei = formData.get("deviceImei") as string
+  const devicePassword = formData.get("devicePassword") as string
+  const problemDescription = formData.get("problemDescription") as string
+  const estimatedCost = formData.get("estimatedCost") as string
+  const accessories = formData.get("accessories") as string
+  const notes = formData.get("notes") as string
 
-    console.log("[v0] Creating order with data:", {
-      customerName,
-      customerPhone,
-      deviceType,
-      deviceBrand,
-    })
+  // Check for existing customer or create new
+  let customerId: string
 
-    // Check for existing customer
-    let customerId: string
+  const { data: existingCustomer } = await supabase
+    .from("customers")
+    .select("id")
+    .eq("phone", customerPhone)
+    .maybeSingle()
 
-    const { data: existingCustomer, error: customerSearchError } = await supabase
+  if (existingCustomer) {
+    customerId = existingCustomer.id
+    // Update customer name/email if provided
+    await supabase
       .from("customers")
+      .update({ name: customerName, email: customerEmail || null })
+      .eq("id", customerId)
+  } else {
+    const { data: newCustomer, error: customerError } = await supabase
+      .from("customers")
+      .insert({
+        name: customerName,
+        phone: customerPhone,
+        email: customerEmail || null,
+      })
       .select("id")
-      .eq("phone", customerPhone)
-      .maybeSingle()
+      .single()
 
-    if (customerSearchError) {
-      console.error("[v0] Error searching for customer:", customerSearchError)
-      throw new Error("Erro ao buscar cliente: " + customerSearchError.message)
+    if (customerError) {
+      throw new Error("Erro ao criar cliente: " + customerError.message)
     }
-
-    if (existingCustomer) {
-      console.log("[v0] Found existing customer:", existingCustomer.id)
-      customerId = existingCustomer.id
-    } else {
-      console.log("[v0] Creating new customer...")
-      const { data: newCustomer, error: customerError } = await supabase
-        .from("customers")
-        .insert({
-          name: customerName,
-          phone: customerPhone,
-          email: customerEmail || null,
-        })
-        .select("id")
-        .single()
-
-      if (customerError) {
-        console.error("[v0] Error creating customer:", customerError)
-        throw new Error("Erro ao criar cliente: " + customerError.message)
-      }
-
-      console.log("[v0] Customer created:", newCustomer.id)
-      customerId = newCustomer.id
-    }
-
-    // Create repair order
-    const finalCost = estimatedCost ? Number.parseFloat(estimatedCost) : null
-
-    const { error: orderError } = await supabase.from("repair_orders").insert({
-      customer_id: customerId,
-      device_type: deviceType,
-      device_brand: deviceBrand,
-      device_model: deviceModel || null,
-      problem_description: problemDescription,
-      estimated_cost: finalCost,
-      status: "pending",
-    })
-
-    if (orderError) {
-      console.error("[v0] Error creating order:", orderError)
-      throw new Error("Erro ao criar ordem: " + orderError.message)
-    }
-
-    console.log("[v0] Order created successfully!")
-
-    revalidatePath("/admin/orders")
-  } catch (error) {
-    console.error("[v0] Error in createOrder:", error)
-    throw error
+    customerId = newCustomer.id
   }
 
+  // Create repair order
+  const finalCost = estimatedCost ? Number.parseFloat(estimatedCost) : null
+
+  const problemFull = [
+    problemDescription,
+    deviceColor ? `Cor: ${deviceColor}` : "",
+    deviceImei ? `IMEI: ${deviceImei}` : "",
+    devicePassword ? `Senha: ${devicePassword}` : "",
+    accessories ? `Acessorios: ${accessories}` : "",
+  ]
+    .filter(Boolean)
+    .join("\n")
+
+  const { error: orderError } = await supabase.from("repair_orders").insert({
+    customer_id: customerId,
+    device_type: deviceType,
+    device_brand: deviceBrand,
+    device_model: deviceModel || null,
+    problem_description: problemFull,
+    estimated_cost: finalCost,
+    notes: notes || null,
+    status: "pending",
+  })
+
+  if (orderError) {
+    throw new Error("Erro ao criar ordem: " + orderError.message)
+  }
+
+  revalidatePath("/admin/orders")
   redirect("/admin/orders")
 }

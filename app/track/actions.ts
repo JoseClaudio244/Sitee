@@ -1,12 +1,12 @@
 "use server"
 
-import { createClient } from "@/lib/supabase/server"
+import { createAdminClient } from "@/lib/supabase/admin"
 
 export async function trackOrderByPhone(phone: string) {
   console.log("[v0] Tracking order for phone:", phone)
 
   try {
-    const supabase = await createClient()
+    const supabase = createAdminClient()
 
     // First, find the customer by phone
     const { data: customers, error: customerError } = await supabase

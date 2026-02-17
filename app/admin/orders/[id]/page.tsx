@@ -1,4 +1,4 @@
-import { createClient } from "@/lib/supabase/server"
+import { createAdminClient } from "@/lib/supabase/admin"
 import { notFound, redirect } from "next/navigation"
 import { OrderDetails } from "@/components/admin/order-details"
 
@@ -9,7 +9,7 @@ export default async function OrderDetailPage({ params }: { params: Promise<{ id
     redirect("/admin/orders/new")
   }
 
-  const supabase = await createClient()
+  const supabase = createAdminClient()
 
   const { data: order } = await supabase
     .from("repair_orders")

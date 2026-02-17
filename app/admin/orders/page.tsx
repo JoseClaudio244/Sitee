@@ -1,4 +1,4 @@
-import { createClient } from "@/lib/supabase/server"
+import { createAdminClient } from "@/lib/supabase/admin"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Plus } from "lucide-react"
@@ -6,7 +6,7 @@ import Link from "next/link"
 import { OrdersTable } from "@/components/admin/orders-table"
 
 export default async function OrdersPage() {
-  const supabase = await createClient()
+  const supabase = createAdminClient()
 
   const { data: orders } = await supabase
     .from("repair_orders")

@@ -15,8 +15,7 @@ import {
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
-import { createClient } from "@/lib/supabase/client"
-import { useRouter } from "next/navigation"
+import { createService, updateService } from "@/app/admin/actions"
 
 type Service = {
   id: string
@@ -36,7 +35,6 @@ export function ServiceDialog({ open, onClose, service }: ServiceDialogProps) {
   const [description, setDescription] = useState("")
   const [price, setPrice] = useState("")
   const [isSubmitting, setIsSubmitting] = useState(false)
-  const router = useRouter()
 
   useEffect(() => {
     if (service) {
@@ -54,35 +52,21 @@ export function ServiceDialog({ open, onClose, service }: ServiceDialogProps) {
     e.preventDefault()
     setIsSubmitting(true)
 
-    console.log("[v0] Submitting service:", { name, description, price })
-
-    const supabase = createClient()
     const serviceData = {
       name,
       description: description || null,
       estimated_price: price ? Number.parseFloat(price) : null,
     }
 
-    let error
-
-    if (service) {
-      // Update existing service
-      console.log("[v0] Updating service:", service.id)
-      const result = await supabase.from("services").update(serviceData).eq("id", service.id)
-      error = result.error
-    } else {
-      // Create new service
-      console.log("[v0] Creating new service")
-      const result = await supabase.from("services").insert([serviceData])
-      error = result.error
-    }
-
-    if (error) {
-      console.error("[v0] Error saving service:", error)
-      alert("Erro ao salvar serviço: " + error.message)
-    } else {
-      console.log("[v0] Service saved successfully")
+    try {
+      if (service) {
+        await updateService(service.id, serviceData)
+      } else {
+        await createService(serviceData)
+      }
       onClose(true)
+    } catch (err) {
+      alert(err instanceof Error ? err.message : "Erro ao salvar servico")
     }
 
     setIsSubmitting(false)

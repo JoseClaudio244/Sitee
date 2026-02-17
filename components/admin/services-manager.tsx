@@ -6,7 +6,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { Plus, Pencil, Trash2 } from "lucide-react"
 import { ServiceDialog } from "./service-dialog"
-import { createClient } from "@/lib/supabase/client"
+import { deleteService, fetchServices } from "@/app/admin/actions"
 
 type Service = {
   id: string
@@ -23,50 +23,33 @@ export function ServicesManager({ initialServices }: { initialServices: Service[
   const [isDeleting, setIsDeleting] = useState<string | null>(null)
 
   const refetchServices = async () => {
-    console.log("[v0] Refetching services...")
-    const supabase = createClient()
-    const { data, error } = await supabase.from("services").select("*").order("created_at", { ascending: false })
-
-    if (error) {
-      console.error("[v0] Error fetching services:", error)
-    } else {
-      console.log("[v0] Services refetched:", data)
-      setServices(data || [])
-    }
+    const data = await fetchServices()
+    setServices(data)
   }
 
   const handleAddService = () => {
-    console.log("[v0] Opening dialog to add service")
     setEditingService(null)
     setDialogOpen(true)
   }
 
   const handleEditService = (service: Service) => {
-    console.log("[v0] Opening dialog to edit service:", service)
     setEditingService(service)
     setDialogOpen(true)
   }
 
   const handleDeleteService = async (id: string) => {
-    if (!confirm("Tem certeza que deseja excluir este serviço?")) return
-
-    console.log("[v0] Deleting service:", id)
+    if (!confirm("Tem certeza que deseja excluir este servico?")) return
     setIsDeleting(id)
-    const supabase = createClient()
-    const { error } = await supabase.from("services").delete().eq("id", id)
-
-    if (error) {
-      console.error("[v0] Error deleting service:", error)
-      alert("Erro ao excluir serviço")
-    } else {
-      console.log("[v0] Service deleted successfully")
+    try {
+      await deleteService(id)
       setServices(services.filter((s) => s.id !== id))
+    } catch {
+      alert("Erro ao excluir servico")
     }
     setIsDeleting(null)
   }
 
   const handleDialogClose = async (updated: boolean) => {
-    console.log("[v0] Dialog closed, updated:", updated)
     setDialogOpen(false)
     setEditingService(null)
     if (updated) {
