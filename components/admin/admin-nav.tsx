@@ -1,7 +1,8 @@
 "use client"
 
 import { Button } from "@/components/ui/button"
-import { Home, ClipboardList, Users, Wrench, DollarSign } from "lucide-react"
+import { Home, ClipboardList, Users, Wrench, DollarSign, LogOut } from "lucide-react"
+import { logout } from "@/app/auth/login/actions"
 import Image from "next/image"
 import Link from "next/link"
 import { usePathname } from "next/navigation"
@@ -13,8 +14,8 @@ export function AdminNav() {
     { href: "/admin", label: "Dashboard", icon: Home },
     { href: "/admin/orders", label: "Ordens", icon: ClipboardList },
     { href: "/admin/customers", label: "Clientes", icon: Users },
-    { href: "/admin/services", label: "Serviços", icon: Wrench },
-    { href: "/admin/reports", label: "Relatórios", icon: DollarSign },
+    { href: "/admin/services", label: "Servicos", icon: Wrench },
+    { href: "/admin/reports", label: "Relatorios", icon: DollarSign },
   ]
 
   return (
@@ -44,6 +45,12 @@ export function AdminNav() {
               })}
             </nav>
           </div>
+          <form action={logout}>
+            <Button variant="ghost" size="sm" className="text-red-500 hover:text-red-600 hover:bg-red-500/10">
+              <LogOut className="h-4 w-4 mr-2" />
+              <span className="hidden sm:inline">Sair</span>
+            </Button>
+          </form>
         </div>
 
         {/* Mobile Navigation */}
