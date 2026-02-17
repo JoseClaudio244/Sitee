@@ -4,18 +4,6 @@ import { revalidatePath } from "next/cache"
 import { redirect } from "next/navigation"
 import { createAdminClient } from "@/lib/supabase/admin"
 
-export async function getServices() {
-  const supabase = createAdminClient()
-  const { data, error } = await supabase.from("services").select("*").order("name")
-
-  if (error) {
-    console.error("[v0] Error loading services:", error)
-    return []
-  }
-
-  return data || []
-}
-
 export async function createOrder(formData: FormData) {
   const supabase = createAdminClient()
 

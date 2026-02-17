@@ -1,9 +1,20 @@
 import { NewOrderForm } from "@/components/admin/new-order-form"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { getServices } from "./actions"
+import { createAdminClient } from "@/lib/supabase/admin"
 
 export default async function NewOrderPage() {
-  const services = await getServices()
+  let services: { id: string; name: string; description: string | null; estimated_price: number }[] = []
+
+  try {
+    const supabase = createAdminClient()
+    const { data, error } = await supabase.from("services").select("*").order("name")
+    if (!error && data) {
+      services = data
+    }
+    console.log("[v0] Services loaded:", services.length, "Error:", error?.message)
+  } catch (err) {
+    console.error("[v0] Failed to load services:", err)
+  }
 
   return (
     <div className="max-w-3xl mx-auto space-y-6">
